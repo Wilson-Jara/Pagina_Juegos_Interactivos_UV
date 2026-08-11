@@ -1,35 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { gameCatalog, type GameDefinition } from '../data/games';
 
 type IconName =
     | 'play'
     | 'plus'
     | 'search';
 
-type Game = {
-    id: string;
-    title: string;
-    subtitle: string;
-    description: string;
-    route: string;
-    category: string;
-    badge: string;
-    artClass: string;
-};
+type Game = GameDefinition;
 
-// Add future games to this list and they will appear in the shelf automatically.
-const games: Game[] = [
-    {
-        id: 'flappy-bird',
-        title: 'Flappy Bird',
-        subtitle: 'Controla el vuelo',
-        description: 'Usa tu cámara y tus movimientos para mantenerte en el aire.',
-        route: '/flappy',
-        category: 'Arcade',
-        badge: 'CÁMARA',
-        artClass: 'game-art--flappy',
-    },
-];
+const games = gameCatalog;
 
 function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
     const props = {

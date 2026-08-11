@@ -1,17 +1,18 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Home from './Paginas/Home';
-import FlappyGame from './Paginas/Flappygame';
+
+const Home = lazy(() => import('./pages/HomePage'));
+const FlappyGame = lazy(() => import('./pages/FlappyPage'));
 
 function App() {
     return (
         <BrowserRouter>
-            <Routes>
-                {/* El path "/" representa la página inicial por defecto */}
-                <Route path="/" element={<Home />} />
-                
-                {/* El path "/flappy" cargará nuestro juego */}
-                <Route path="/flappy" element={<FlappyGame />} />
-            </Routes>
+            <Suspense fallback={<div className="route-loading">Cargando...</div>}>
+                <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/flappy" element={<FlappyGame />} />
+                </Routes>
+            </Suspense>
         </BrowserRouter>
     );
 }
