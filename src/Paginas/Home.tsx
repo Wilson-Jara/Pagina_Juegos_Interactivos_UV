@@ -14,6 +14,7 @@ type Game = {
     route: string;
     category: string;
     badge: string;
+    artClass: string;
 };
 
 // Add future games to this list and they will appear in the shelf automatically.
@@ -26,6 +27,7 @@ const games: Game[] = [
         route: '/flappy',
         category: 'Arcade',
         badge: 'CÁMARA',
+        artClass: 'game-art--flappy',
     },
 ];
 
@@ -56,9 +58,16 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
 
 function GameArtwork({ game, compact = false }: { game: Game; compact?: boolean }) {
     return (
-        <div className={`game-art ${compact ? 'game-art--compact' : ''}`} aria-hidden="true">
-            <span className="game-art__title">{game.title}</span>
-            <span className="game-art__sub">{game.badge}</span>
+        <div className={`game-art ${game.artClass} ${compact ? 'game-art--compact' : ''}`} aria-hidden="true">
+            <span className="game-art__sun" />
+            <span className="game-art__mountain game-art__mountain--back" />
+            <span className="game-art__mountain game-art__mountain--front" />
+            <span className="game-art__cloud game-art__cloud--one" />
+            <span className="game-art__cloud game-art__cloud--two" />
+            <span className="game-art__pipe game-art__pipe--one" />
+            <span className="game-art__pipe game-art__pipe--two" />
+            <span className="game-art__bird"><i /></span>
+            {!compact && <span className="game-art__stamp">{game.badge} / 001</span>}
         </div>
     );
 }
@@ -107,7 +116,7 @@ export default function Home() {
                             </>
                         ) : (
                             <button className="login-button" type="button" onClick={() => { setIsLoggedIn(true); setUserName('Jugador'); }}>
-                                <span className="login-button__icon"><Icon name="play" size={12} /></span>
+                                <span className="login-button__icon"><Icon name="play" size={15} /></span>
                                 Iniciar sesión
                             </button>
                         )}
@@ -118,7 +127,7 @@ export default function Home() {
                     <div className={`console-search ${searchOpen ? 'is-open' : ''}`}>
                         {searchOpen && <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape') { setQuery(''); setSearchOpen(false); } }} placeholder="Buscar" aria-label="Buscar juegos" />}
                         <button type="button" onClick={() => setSearchOpen((open) => !open)} aria-label={searchOpen ? 'Cerrar búsqueda' : 'Buscar juegos'}>
-                            <Icon name="search" size={15} />
+                            <Icon name="search" size={18} />
                             {!searchOpen && <span>Buscar</span>}
                         </button>
                     </div>
