@@ -3,36 +3,6 @@ import { Link } from 'react-router-dom';
 import PhaserGame from '../components/PhaserGame';
 import { flappyConfig } from '../games/flappy/FlappyScene';
 
-type ScoreRow = {
-    name: string;
-    score: number;
-};
-
-const previewScores: ScoreRow[] = [
-    { name: 'Wilson', score: 40 },
-    { name: 'Wilson', score: 34 },
-    { name: 'Vicente Saa', score: 18 },
-    { name: 'Saa', score: 16 },
-    { name: 'Alonso Tapia', score: 13 },
-    { name: 'Alonso', score: 11 },
-    { name: 'Saa', score: 11 },
-    { name: 'Wilson', score: 11 },
-    { name: 'Prueba 2', score: 8 },
-    { name: 'Wilson Jara', score: 8 },
-    { name: 'Prueba 6', score: 8 },
-    { name: 'Vicente', score: 7 },
-    { name: 'Pancho', score: 6 },
-    { name: 'Tomas Zamora', score: 5 },
-    { name: 'Prueba 5', score: 4 },
-];
-
-function medalFor(index: number): string {
-    if (index === 0) return '🥇';
-    if (index === 1) return '🥈';
-    if (index === 2) return '🥉';
-    return `${index + 1}.`;
-}
-
 export default function FlappyGame() {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const imageInputRef = useRef<HTMLInputElement | null>(null);
@@ -77,13 +47,7 @@ export default function FlappyGame() {
                         <span>Score</span>
                     </div>
                     <ol className="visual-score-list">
-                        {previewScores.map((row, index) => (
-                            <li key={`${row.name}-${index}`}>
-                                <span className="visual-score-list__rank">{medalFor(index)}</span>
-                                <strong>{row.name}</strong>
-                                <b>{row.score}</b>
-                            </li>
-                        ))}
+                        <li className="visual-score-empty">Sin récords todavía</li>
                     </ol>
                 </aside>
 

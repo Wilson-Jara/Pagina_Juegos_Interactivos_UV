@@ -1169,7 +1169,7 @@ input:focus-visible {
 
 .visual-game-layout {
     display: grid;
-    grid-template-columns: minmax(360px, 0.95fr) minmax(560px, 1.4fr) minmax(340px, 1.02fr);
+    grid-template-columns: minmax(270px, 0.72fr) minmax(560px, 1.64fr) minmax(340px, 1.02fr);
     gap: 16px;
     height: calc(100vh - 58px);
     padding: 6px 24px;
@@ -1267,6 +1267,15 @@ input:focus-visible {
     color: var(--blue-bright);
     font-size: 17px;
     font-variant-numeric: tabular-nums;
+}
+
+.visual-score-empty {
+    grid-template-columns: 1fr !important;
+    align-items: center;
+    justify-content: center;
+    color: #71808d !important;
+    font-size: 13px !important;
+    text-align: center;
 }
 
 .visual-game-board {
