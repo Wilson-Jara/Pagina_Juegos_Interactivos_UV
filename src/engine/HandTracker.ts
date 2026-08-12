@@ -20,13 +20,15 @@ type VideoFrameSource = HTMLVideoElement & {
     cancelVideoFrameCallback?: (handle: number) => void;
 };
 
-const INFERENCE_WIDTH = 320;
+const INFERENCE_WIDTH = 256;
+const INFERENCE_INTERVAL_MS = 50;
 
 export type HandTrackerOptions = {
     bundleUrl?: string;
     modelAssetPath: string;
     wasmRoot: string;
     maxHands?: number;
+    delegate?: 'GPU' | 'CPU';
     worker?: Worker;
 };
 
@@ -39,6 +41,7 @@ export class HandTracker {
     private running = false;
     private processing = false;
     private workerReady = false;
+    private lastInferenceTimestamp = Number.NEGATIVE_INFINITY;
 
     constructor(options: HandTrackerOptions) {
         this.worker = options.worker ?? new Worker(new URL('./handWorker.ts', import.meta.url), { type: 'module' });
@@ -50,6 +53,7 @@ export class HandTracker {
             modelAssetPath: options.modelAssetPath,
             wasmRoot: options.wasmRoot,
             maxHands: options.maxHands ?? 2,
+            delegate: options.delegate ?? 'CPU',
         } satisfies HandWorkerMessage);
     }
 
@@ -68,6 +72,7 @@ export class HandTracker {
         this.video = video;
         this.running = true;
         this.processing = false;
+        this.lastInferenceTimestamp = Number.NEGATIVE_INFINITY;
         this.scheduleFrame();
     }
 
@@ -88,6 +93,7 @@ export class HandTracker {
         }
 
         this.processing = false;
+        this.lastInferenceTimestamp = Number.NEGATIVE_INFINITY;
     }
 
     dispose(): void {
@@ -117,6 +123,14 @@ export class HandTracker {
             return;
         }
 
+        const captureTimestamp = performance.now();
+
+        if (captureTimestamp - this.lastInferenceTimestamp < INFERENCE_INTERVAL_MS) {
+            this.scheduleFrame();
+            return;
+        }
+
+        this.lastInferenceTimestamp = captureTimestamp;
         this.processing = true;
         const video = this.video;
         const sourceWidth = video.videoWidth || 640;
@@ -140,7 +154,7 @@ export class HandTracker {
 
             const message: HandWorkerMessage = {
                 type: 'frame',
-                timestamp: performance.now(),
+                timestamp: captureTimestamp,
                 width: sourceWidth,
                 height: sourceHeight,
                 bitmap,

@@ -6,6 +6,7 @@ type InitMessage = {
     modelAssetPath: string;
     wasmRoot: string;
     maxHands: number;
+    delegate: 'GPU' | 'CPU';
 };
 
 type FrameMessage = {
@@ -66,7 +67,7 @@ scope.onmessage = async (event) => {
             const vision = await FilesetResolver.forVisionTasks(event.data.wasmRoot, true);
 
             const options = {
-                baseOptions: { modelAssetPath: event.data.modelAssetPath, delegate: 'GPU' as const },
+                baseOptions: { modelAssetPath: event.data.modelAssetPath, delegate: event.data.delegate },
                 numHands: event.data.maxHands,
                 runningMode: 'VIDEO' as const,
                 minHandDetectionConfidence: 0.5,
@@ -79,7 +80,10 @@ scope.onmessage = async (event) => {
             } catch {
                 landmarker = await HandLandmarker.createFromOptions(vision, {
                     ...options,
-                    baseOptions: { ...options.baseOptions, delegate: 'CPU' },
+                    baseOptions: {
+                        ...options.baseOptions,
+                        delegate: event.data.delegate === 'GPU' ? 'CPU' : 'GPU',
+                    },
                 });
             }
 

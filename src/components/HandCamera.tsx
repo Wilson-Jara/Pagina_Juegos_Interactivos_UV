@@ -110,6 +110,7 @@ export default function HandCamera() {
             modelAssetPath: DEFAULT_HAND_MODEL_ASSET_PATH,
             wasmRoot: DEFAULT_HAND_WASM_ROOT,
             maxHands: 2,
+            delegate: 'CPU',
         });
 
         const unsubscribeReady = tracker.on('ready', () => {
@@ -151,8 +152,8 @@ export default function HandCamera() {
                     audio: false,
                     video: {
                         facingMode: 'user',
-                        width: { ideal: 640 },
-                        height: { ideal: 480 },
+                        width: { ideal: 480 },
+                        height: { ideal: 360 },
                         frameRate: { ideal: 30, max: 30 },
                     },
                 });
