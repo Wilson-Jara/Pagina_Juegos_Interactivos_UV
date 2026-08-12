@@ -10,7 +10,7 @@ export const DEFAULT_HAND_WASM_ROOT =
     'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm';
 
 type HandTrackerEvents = {
-    ready: undefined;
+    ready: { delegate: 'GPU' | 'CPU' };
     frame: CameraFrame;
     error: { error: Error };
 };
@@ -21,7 +21,7 @@ type VideoFrameSource = HTMLVideoElement & {
 };
 
 const INFERENCE_WIDTH = 256;
-const INFERENCE_INTERVAL_MS = 50;
+const INFERENCE_INTERVAL_MS = 30;
 
 export type HandTrackerOptions = {
     bundleUrl?: string;
@@ -143,7 +143,7 @@ export class HandTracker {
             const bitmap = await createImageBitmap(video, {
                 resizeWidth: frameWidth,
                 resizeHeight: frameHeight,
-                resizeQuality: 'medium',
+                resizeQuality: 'low',
             });
 
             if (!this.running || this.video !== video) {
@@ -171,7 +171,7 @@ export class HandTracker {
     private readonly handleMessage = (event: MessageEvent<HandWorkerResponse>): void => {
         if (event.data.type === 'ready') {
             this.workerReady = true;
-            this.events.emit('ready', undefined);
+            this.events.emit('ready', { delegate: event.data.delegate });
         } else if (event.data.type === 'frame') {
             this.processing = false;
             this.events.emit('frame', event.data.frame);

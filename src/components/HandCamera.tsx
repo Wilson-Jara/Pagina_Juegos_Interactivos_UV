@@ -16,6 +16,8 @@ const HAND_CONNECTIONS: ReadonlyArray<[number, number]> = [
     [0, 17],
 ];
 
+const overlayContexts = new WeakMap<HTMLCanvasElement, CanvasRenderingContext2D>();
+
 function drawHandOverlay(canvas: HTMLCanvasElement, frame: CameraFrame): void {
     const bounds = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
@@ -27,7 +29,15 @@ function drawHandOverlay(canvas: HTMLCanvasElement, frame: CameraFrame): void {
         canvas.height = height;
     }
 
-    const context = canvas.getContext('2d');
+    let context = overlayContexts.get(canvas);
+
+    if (!context) {
+        context = canvas.getContext('2d') ?? undefined;
+
+        if (context) {
+            overlayContexts.set(canvas, context);
+        }
+    }
 
     if (!context) {
         return;
@@ -87,6 +97,7 @@ export default function HandCamera() {
     const [status, setStatus] = useState('Preparando cámara...');
     const [cameraReady, setCameraReady] = useState(false);
     const [trackerReady, setTrackerReady] = useState(false);
+    const [delegate, setDelegate] = useState<'GPU' | 'CPU' | null>(null);
 
     useEffect(() => {
         const video = videoRef.current;
@@ -110,16 +121,17 @@ export default function HandCamera() {
             modelAssetPath: DEFAULT_HAND_MODEL_ASSET_PATH,
             wasmRoot: DEFAULT_HAND_WASM_ROOT,
             maxHands: 2,
-            delegate: 'CPU',
+            delegate: 'GPU',
         });
 
-        const unsubscribeReady = tracker.on('ready', () => {
+        const unsubscribeReady = tracker.on('ready', ({ delegate: activeDelegate }) => {
             if (disposed) {
                 return;
             }
 
             trackerReadyRef.current = true;
             setTrackerReady(true);
+            setDelegate(activeDelegate);
             updateStatus('Cargando cámara...');
         });
 
@@ -191,7 +203,7 @@ export default function HandCamera() {
         };
     }, []);
 
-    const badge = trackerReady ? 'MEDIAPIPE ACTIVO' : cameraReady ? 'CÁMARA ACTIVA' : 'SIN CÁMARA';
+    const badge = trackerReady ? `MEDIAPIPE ${delegate ?? 'ACTIVO'}` : cameraReady ? 'CÁMARA ACTIVA' : 'SIN CÁMARA';
     const showStatus = status.length > 0 && !(cameraReady && trackerReady);
 
     return (

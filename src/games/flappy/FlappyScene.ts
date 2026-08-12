@@ -26,7 +26,7 @@ const GROUND_HEIGHT = 72;
 const BIRD_RADIUS = 28;
 const BIRD_SCALE = 1;
 const MAX_LIVES = 3;
-const HAND_FLAP_COOLDOWN_MS = 150;
+const HAND_FLAP_COOLDOWN_MS = 120;
 const POOL_SIZE = 5;
 const BEST_SCORE_KEY = 'play-arcade-flappy-best';
 

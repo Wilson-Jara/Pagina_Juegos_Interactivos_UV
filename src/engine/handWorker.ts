@@ -19,7 +19,7 @@ type FrameMessage = {
 
 export type HandWorkerMessage = InitMessage | FrameMessage;
 
-type ReadyResponse = { type: 'ready' };
+type ReadyResponse = { type: 'ready'; delegate: 'GPU' | 'CPU' };
 type FrameResponse = { type: 'frame'; frame: CameraFrame };
 type ErrorResponse = { type: 'error'; message: string };
 export type HandWorkerResponse = ReadyResponse | FrameResponse | ErrorResponse;
@@ -75,9 +75,12 @@ scope.onmessage = async (event) => {
                 minHandPresenceConfidence: 0.5,
             };
 
+            let activeDelegate = event.data.delegate;
+
             try {
                 landmarker = await HandLandmarker.createFromOptions(vision, options);
             } catch {
+                activeDelegate = event.data.delegate === 'GPU' ? 'CPU' : 'GPU';
                 landmarker = await HandLandmarker.createFromOptions(vision, {
                     ...options,
                     baseOptions: {
@@ -87,7 +90,7 @@ scope.onmessage = async (event) => {
                 });
             }
 
-            scope.postMessage({ type: 'ready' });
+            scope.postMessage({ type: 'ready', delegate: activeDelegate });
             return;
         }
 
