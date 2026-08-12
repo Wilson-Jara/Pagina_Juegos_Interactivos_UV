@@ -1,8 +1,8 @@
-import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
 import type { CameraFrame, HandLandmark, TrackedHand } from './types';
 
 type InitMessage = {
     type: 'init';
+    bundleUrl: string;
     modelAssetPath: string;
     wasmRoot: string;
     maxHands: number;
@@ -29,17 +29,37 @@ type WorkerScope = {
 };
 
 const scope = globalThis as unknown as WorkerScope;
-let landmarker: HandLandmarker | null = null;
+let landmarker: {
+    detectForVideo: (image: ImageBitmap, timestamp: number) => {
+        landmarks: Array<Array<{ x: number; y: number; z: number }>>;
+        handednesses: Array<Array<{ score?: number; categoryName?: string }>>;
+    };
+} | null = null;
 
 scope.onmessage = async (event) => {
     try {
         if (event.data.type === 'init') {
-            const vision = await FilesetResolver.forVisionTasks(event.data.wasmRoot);
-            landmarker = await HandLandmarker.createFromOptions(vision, {
-                baseOptions: { modelAssetPath: event.data.modelAssetPath },
+            const { FilesetResolver, HandLandmarker } = await import(/* @vite-ignore */ event.data.bundleUrl);
+            const vision = await FilesetResolver.forVisionTasks(event.data.wasmRoot, true);
+
+            const options = {
+                baseOptions: { modelAssetPath: event.data.modelAssetPath, delegate: 'GPU' as const },
                 numHands: event.data.maxHands,
-                runningMode: 'VIDEO',
-            });
+                runningMode: 'VIDEO' as const,
+                minHandDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5,
+                minHandPresenceConfidence: 0.5,
+            };
+
+            try {
+                landmarker = await HandLandmarker.createFromOptions(vision, options);
+            } catch {
+                landmarker = await HandLandmarker.createFromOptions(vision, {
+                    ...options,
+                    baseOptions: { ...options.baseOptions, delegate: 'CPU' },
+                });
+            }
+
             scope.postMessage({ type: 'ready' });
             return;
         }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
+import HandCamera from '../components/HandCamera';
 import PhaserGame from '../components/PhaserGame';
 import { flappyConfig } from '../games/flappy/FlappyScene';
 
@@ -57,7 +58,7 @@ export default function FlappyGame() {
 
                 <aside className="visual-side-panels" aria-label="Paneles auxiliares">
                     <div className="visual-camera-panel">
-                        <span>Sin cámara</span>
+                        <HandCamera />
                     </div>
                     <div className="visual-image-panel">
                         {selectedImage ? (
