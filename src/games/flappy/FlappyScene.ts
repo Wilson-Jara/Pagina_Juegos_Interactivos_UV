@@ -5,7 +5,7 @@ import type { TrackedHand } from '../../engine/types';
 
 const DESIGN_H = 720;
 const GRAVITY = 1008;
-const FLAP_VELOCITY = -396;
+const FLAP_VELOCITY = -300;
 const MAX_FALL_SPEED = 450;
 const EASY_PIPE_SPEED = 180;
 const MEDIUM_PIPE_SPEED = 198;
@@ -191,12 +191,19 @@ export class FlappyScene extends AbstractPhaserScene {
             return;
         }
 
+        const now = this.time.now;
+
+        if (now - this.lastHandFlapAt < HAND_FLAP_COOLDOWN_MS) {
+            return;
+        }
+
+        this.lastHandFlapAt = now;
         this.birdVy = FLAP_VELOCITY * this.u;
         this.bird.rotation = -0.42;
         this.sfx.flap();
     }
 
-    private updateHandInput(time: number): void {
+    private updateHandInput(_time: number): void {
         const frame = getLatestCameraFrame();
 
         if (!frame || frame.timestamp <= this.lastCameraTimestamp) {
@@ -210,18 +217,11 @@ export class FlappyScene extends AbstractPhaserScene {
             return;
         }
 
-        if (time - this.lastHandFlapAt < HAND_FLAP_COOLDOWN_MS) {
-            return;
-        }
-
         if (this.phase === 'ready') {
             this.startPlay();
         }
 
-        if (this.phase === 'play') {
-            this.flap();
-            this.lastHandFlapAt = time;
-        }
+        this.flap();
     }
 
     private isHandOpen(hand: TrackedHand): boolean {
