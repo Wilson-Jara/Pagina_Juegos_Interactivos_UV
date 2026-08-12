@@ -39,15 +39,21 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
 function GameArtwork({ game, compact = false }: { game: Game; compact?: boolean }) {
     return (
         <div className={`game-art ${game.artClass} ${compact ? 'game-art--compact' : ''}`} aria-hidden="true">
-            <span className="game-art__sun" />
+            <span className="game-art__stars" />
+            <span className="game-art__glow" />
             <span className="game-art__mountain game-art__mountain--back" />
             <span className="game-art__mountain game-art__mountain--front" />
             <span className="game-art__cloud game-art__cloud--one" />
-            <span className="game-art__cloud game-art__cloud--two" />
+            <span className="game-art__city game-art__city--back" />
+            <span className="game-art__city game-art__city--front" />
             <span className="game-art__pipe game-art__pipe--one" />
             <span className="game-art__pipe game-art__pipe--two" />
+            <span className="game-art__ground" />
+            <span className="game-art__title">FLAPPY<br />BIRD</span>
+            <span className="game-art__lives"><i /><i /><i /></span>
+            <span className="game-art__score">0</span>
             <span className="game-art__bird"><i /></span>
-            {!compact && <span className="game-art__stamp">{game.badge} / 001</span>}
+            <span className="game-art__frame" />
         </div>
     );
 }

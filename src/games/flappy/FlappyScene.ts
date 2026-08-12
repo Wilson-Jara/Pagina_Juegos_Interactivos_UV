@@ -4,20 +4,20 @@ import { getLatestCameraFrame } from '../../engine/cameraInput';
 import type { TrackedHand } from '../../engine/types';
 
 const DESIGN_H = 720;
-const GRAVITY = 1900;
-const FLAP_VELOCITY = -560;
-const MAX_FALL_SPEED = 980;
-const EASY_PIPE_SPEED = 190;
-const MEDIUM_PIPE_SPEED = 220;
-const HARD_PIPE_SPEED = 245;
-const EXTREME_PIPE_SPEED = 270;
-const EXTREME_SPEED_STEP = 16;
+const GRAVITY = 1008;
+const FLAP_VELOCITY = -396;
+const MAX_FALL_SPEED = 450;
+const EASY_PIPE_SPEED = 180;
+const MEDIUM_PIPE_SPEED = 198;
+const HARD_PIPE_SPEED = 216;
+const EXTREME_PIPE_SPEED = 234;
+const EXTREME_SPEED_STEP = 14;
 const EASY_PIPE_GAP = 220;
-const MEDIUM_PIPE_GAP = 195;
-const HARD_PIPE_GAP = 175;
-const EXTREME_PIPE_GAP = 160;
-const EXTREME_GAP_STEP = 8;
-const MIN_PIPE_GAP = 124;
+const MEDIUM_PIPE_GAP = 205;
+const HARD_PIPE_GAP = 190;
+const EXTREME_PIPE_GAP = 178;
+const EXTREME_GAP_STEP = 6;
+const MIN_PIPE_GAP = 136;
 const PIPE_SPACING = 330;
 const PIPE_WIDTH = 84;
 const CAP_WIDTH = 94;
@@ -26,6 +26,7 @@ const GROUND_HEIGHT = 72;
 const BIRD_RADIUS = 28;
 const BIRD_SCALE = 1;
 const MAX_LIVES = 3;
+const HAND_FLAP_COOLDOWN_MS = 150;
 const POOL_SIZE = 5;
 const BEST_SCORE_KEY = 'play-arcade-flappy-best';
 
@@ -116,8 +117,8 @@ export class FlappyScene extends AbstractPhaserScene {
     private readonly sfx = new Sfx();
 
     private sky!: Phaser.GameObjects.Image;
-    private farSkyline!: Phaser.GameObjects.TileSprite;
-    private nearSkyline!: Phaser.GameObjects.TileSprite;
+    private farSkyline!: Phaser.GameObjects.Image;
+    private nearSkyline!: Phaser.GameObjects.Image;
     private ground!: Phaser.GameObjects.TileSprite;
     private bird!: Phaser.GameObjects.Sprite;
     private pipes: PipePair[] = [];
@@ -205,11 +206,11 @@ export class FlappyScene extends AbstractPhaserScene {
         this.lastCameraTimestamp = frame.timestamp;
         const hand = frame.hands[0];
 
-        if (!hand || hand.confidence < 0.35 || !this.isHandOpen(hand)) {
+        if (!hand || !this.isHandOpen(hand)) {
             return;
         }
 
-        if (time - this.lastHandFlapAt < 220) {
+        if (time - this.lastHandFlapAt < HAND_FLAP_COOLDOWN_MS) {
             return;
         }
 
@@ -288,7 +289,7 @@ export class FlappyScene extends AbstractPhaserScene {
         this.birdVy = Math.min(this.birdVy + GRAVITY * this.u * dt, MAX_FALL_SPEED * this.u);
         this.bird.y += this.birdVy * dt;
 
-        const ceiling = 26 * this.u;
+        const ceiling = BIRD_RADIUS * this.u;
 
         if (this.bird.y < ceiling) {
             this.bird.y = ceiling;
@@ -525,8 +526,6 @@ export class FlappyScene extends AbstractPhaserScene {
     }
 
     private scrollWorld(dt: number): void {
-        this.farSkyline.tilePositionX += this.pipeSpeed * 0.08 * dt;
-        this.nearSkyline.tilePositionX += this.pipeSpeed * 0.18 * dt;
         this.ground.tilePositionX += this.pipeSpeed * dt;
     }
 
@@ -627,14 +626,14 @@ export class FlappyScene extends AbstractPhaserScene {
             );
         }
 
-        this.farSkyline = this.add.tileSprite(0, this.groundY - 184 * this.u, worldTiles + 640, 190, 'fb-city-far')
+        this.farSkyline = this.add.image(0, this.groundY - 184 * this.u, 'fb-city-far')
             .setOrigin(0)
-            .setScale(this.u)
+            .setDisplaySize(this.w, 190 * this.u)
             .setAlpha(0.88)
             .setDepth(2);
-        this.nearSkyline = this.add.tileSprite(0, this.groundY - 142 * this.u, worldTiles + 640, 150, 'fb-city-near')
+        this.nearSkyline = this.add.image(0, this.groundY - 142 * this.u, 'fb-city-near')
             .setOrigin(0)
-            .setScale(this.u)
+            .setDisplaySize(this.w, 150 * this.u)
             .setAlpha(0.96)
             .setDepth(3);
 
@@ -829,8 +828,16 @@ export class FlappyScene extends AbstractPhaserScene {
 
         this.anims.create({
             key: 'fb-flap',
-            frames: [{ key: 'fb-bird-0' }, { key: 'fb-bird-1' }, { key: 'fb-bird-2' }, { key: 'fb-bird-1' }],
-            frameRate: 11,
+            frames: [
+                { key: 'fb-bird-0' },
+                { key: 'fb-bird-1' },
+                { key: 'fb-bird-2' },
+                { key: 'fb-bird-3' },
+                { key: 'fb-bird-4' },
+                { key: 'fb-bird-5' },
+                { key: 'fb-bird-6' },
+            ],
+            frameRate: 15,
             repeat: -1,
         });
     }
@@ -981,20 +988,58 @@ export class FlappyScene extends AbstractPhaserScene {
     }
 
     private createBirdTextures(): void {
-        const wingOffsets = [-5, 0, 5];
+        const wingOffsets = [-8, -6, -3, 1, 5, 8, 4];
 
-        for (let frame = 0; frame < 3; frame += 1) {
+        for (let frame = 0; frame < 7; frame += 1) {
             this.drawCanvas(`fb-bird-${frame}`, 80, 64, (ctx) => {
                 const cx = 32;
                 const cy = 32;
 
-                ctx.fillStyle = '#ffd232';
+                ctx.fillStyle = '#e6b41e';
+                ctx.beginPath();
+                ctx.moveTo(cx - 17, cy + 2);
+                ctx.lineTo(cx - 31, cy - 8);
+                ctx.lineTo(cx - 24, cy + 10);
+                ctx.closePath();
+                ctx.fill();
+
+                const bodyGradient = ctx.createRadialGradient(cx - 10, cy - 12, 3, cx + 2, cy + 4, 35);
+                bodyGradient.addColorStop(0, '#fff178');
+                bodyGradient.addColorStop(0.48, '#ffd232');
+                bodyGradient.addColorStop(1, '#e8a91e');
+                ctx.fillStyle = bodyGradient;
                 ctx.beginPath();
                 ctx.arc(cx, cy, BIRD_RADIUS, 0, Math.PI * 2);
                 ctx.fill();
 
-                ctx.strokeStyle = '#f0be28';
+                ctx.strokeStyle = '#d39b1f';
                 ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.fillStyle = 'rgba(255, 249, 169, 0.42)';
+                ctx.beginPath();
+                ctx.ellipse(cx - 9, cy + 11, 11, 7, -0.35, 0, Math.PI * 2);
+                ctx.fill();
+
+                const wingGradient = ctx.createLinearGradient(cx - 24, cy - 8, cx - 5, cy + 16);
+                wingGradient.addColorStop(0, '#f6cd42');
+                wingGradient.addColorStop(1, '#c98b17');
+                ctx.fillStyle = wingGradient;
+                ctx.strokeStyle = '#bd851c';
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                ctx.moveTo(cx - 8, cy + 2);
+                ctx.lineTo(cx - 22, cy + wingOffsets[frame] - 5);
+                ctx.lineTo(cx - 5, cy + 14);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.strokeStyle = 'rgba(255, 236, 105, 0.72)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(cx - 12, cy + 3);
+                ctx.lineTo(cx - 19, cy + wingOffsets[frame] - 1);
                 ctx.stroke();
 
                 ctx.fillStyle = '#ffffff';
@@ -1019,12 +1064,15 @@ export class FlappyScene extends AbstractPhaserScene {
                 ctx.lineTo(cx + BIRD_RADIUS - 2, cy + 10);
                 ctx.closePath();
                 ctx.fill();
+                ctx.strokeStyle = '#d35e16';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
 
-                ctx.fillStyle = '#e6b41e';
+                ctx.fillStyle = '#ff9b2e';
                 ctx.beginPath();
-                ctx.moveTo(cx - 8, cy + 2);
-                ctx.lineTo(cx - 22, cy + wingOffsets[frame] - 5);
-                ctx.lineTo(cx - 5, cy + 14);
+                ctx.moveTo(cx + BIRD_RADIUS + 1, cy + 1);
+                ctx.lineTo(cx + BIRD_RADIUS + 11, cy + 4);
+                ctx.lineTo(cx + BIRD_RADIUS + 1, cy + 5);
                 ctx.closePath();
                 ctx.fill();
             });

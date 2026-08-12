@@ -15,6 +15,13 @@ type HandTrackerEvents = {
     error: { error: Error };
 };
 
+type VideoFrameSource = HTMLVideoElement & {
+    requestVideoFrameCallback?: (callback: () => void) => number;
+    cancelVideoFrameCallback?: (handle: number) => void;
+};
+
+const INFERENCE_WIDTH = 320;
+
 export type HandTrackerOptions = {
     bundleUrl?: string;
     modelAssetPath: string;
@@ -28,6 +35,7 @@ export class HandTracker {
     private readonly worker: Worker;
     private video: HTMLVideoElement | null = null;
     private frameRequest: number | null = null;
+    private frameRequestMode: 'video' | 'animation' | null = null;
     private running = false;
     private processing = false;
     private workerReady = false;
@@ -64,12 +72,19 @@ export class HandTracker {
     }
 
     stop(): void {
+        const video = this.video as VideoFrameSource | null;
         this.running = false;
         this.video = null;
 
         if (this.frameRequest !== null) {
-            cancelAnimationFrame(this.frameRequest);
+            if (this.frameRequestMode === 'video' && video?.cancelVideoFrameCallback) {
+                video.cancelVideoFrameCallback(this.frameRequest);
+            } else {
+                cancelAnimationFrame(this.frameRequest);
+            }
+
             this.frameRequest = null;
+            this.frameRequestMode = null;
         }
 
         this.processing = false;
@@ -85,7 +100,13 @@ export class HandTracker {
     }
 
     private scheduleFrame(): void {
-        if (this.running) {
+        const video = this.video as VideoFrameSource | null;
+
+        if (this.running && video?.requestVideoFrameCallback) {
+            this.frameRequestMode = 'video';
+            this.frameRequest = video.requestVideoFrameCallback(() => void this.processFrame());
+        } else if (this.running) {
+            this.frameRequestMode = 'animation';
             this.frameRequest = requestAnimationFrame(() => void this.processFrame());
         }
     }
@@ -100,7 +121,7 @@ export class HandTracker {
         const video = this.video;
         const sourceWidth = video.videoWidth || 640;
         const sourceHeight = video.videoHeight || 480;
-        const resizeScale = Math.min(1, 480 / sourceWidth);
+        const resizeScale = Math.min(1, INFERENCE_WIDTH / sourceWidth);
         const frameWidth = Math.max(1, Math.round(sourceWidth * resizeScale));
         const frameHeight = Math.max(1, Math.round(sourceHeight * resizeScale));
 

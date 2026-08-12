@@ -46,21 +46,35 @@ function drawHandOverlay(canvas: HTMLCanvasElement, frame: CameraFrame): void {
     context.lineWidth = 2;
     context.lineCap = 'round';
 
+    const sourceWidth = Math.max(1, frame.width);
+    const sourceHeight = Math.max(1, frame.height);
+    const coverScale = Math.max(bounds.width / sourceWidth, bounds.height / sourceHeight);
+    const renderedWidth = sourceWidth * coverScale;
+    const renderedHeight = sourceHeight * coverScale;
+    const cropX = (renderedWidth - bounds.width) / 2;
+    const cropY = (renderedHeight - bounds.height) / 2;
+
     for (const [from, to] of HAND_CONNECTIONS) {
         const start = landmarks[from];
         const end = landmarks[to];
+        const startX = start.x * renderedWidth - cropX;
+        const startY = start.y * renderedHeight - cropY;
+        const endX = end.x * renderedWidth - cropX;
+        const endY = end.y * renderedHeight - cropY;
 
         context.beginPath();
-        context.moveTo(start.x * bounds.width, start.y * bounds.height);
-        context.lineTo(end.x * bounds.width, end.y * bounds.height);
+        context.moveTo(startX, startY);
+        context.lineTo(endX, endY);
         context.stroke();
     }
 
     context.fillStyle = '#b8f14b';
 
     for (const landmark of landmarks) {
+        const x = landmark.x * renderedWidth - cropX;
+        const y = landmark.y * renderedHeight - cropY;
         context.beginPath();
-        context.arc(landmark.x * bounds.width, landmark.y * bounds.height, 3, 0, Math.PI * 2);
+        context.arc(x, y, 3, 0, Math.PI * 2);
         context.fill();
     }
 }
@@ -68,6 +82,8 @@ function drawHandOverlay(canvas: HTMLCanvasElement, frame: CameraFrame): void {
 export default function HandCamera() {
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const overlayRef = useRef<HTMLCanvasElement | null>(null);
+    const cameraReadyRef = useRef(false);
+    const trackerReadyRef = useRef(false);
     const [status, setStatus] = useState('Preparando cámara...');
     const [cameraReady, setCameraReady] = useState(false);
     const [trackerReady, setTrackerReady] = useState(false);
@@ -82,10 +98,18 @@ export default function HandCamera() {
 
         let disposed = false;
         let stream: MediaStream | null = null;
+        const updateStatus = (message: string): void => {
+            if (!cameraReadyRef.current || !trackerReadyRef.current) {
+                setStatus(message);
+            } else {
+                setStatus('');
+            }
+        };
+
         const tracker = new HandTracker({
             modelAssetPath: DEFAULT_HAND_MODEL_ASSET_PATH,
             wasmRoot: DEFAULT_HAND_WASM_ROOT,
-            maxHands: 1,
+            maxHands: 2,
         });
 
         const unsubscribeReady = tracker.on('ready', () => {
@@ -93,8 +117,9 @@ export default function HandCamera() {
                 return;
             }
 
+            trackerReadyRef.current = true;
             setTrackerReady(true);
-            setStatus('Mano detectada: abre la mano para volar');
+            updateStatus('Cargando cámara...');
         });
 
         const unsubscribeFrame = tracker.on('frame', (frame) => {
@@ -108,18 +133,20 @@ export default function HandCamera() {
 
         const unsubscribeError = tracker.on('error', ({ error }) => {
             if (!disposed) {
+                trackerReadyRef.current = false;
+                setTrackerReady(false);
                 setStatus(`Detector no disponible: ${error.message}`);
             }
         });
 
         const startCamera = async (): Promise<void> => {
             if (!navigator.mediaDevices?.getUserMedia) {
-                setStatus('Cámara no disponible. Usa mouse o teclado.');
+                updateStatus('Cámara no disponible. Usa mouse o teclado.');
                 return;
             }
 
             try {
-                setStatus('Solicitando permiso de cámara...');
+                updateStatus('Solicitando permiso de cámara...');
                 stream = await navigator.mediaDevices.getUserMedia({
                     audio: false,
                     video: {
@@ -138,9 +165,12 @@ export default function HandCamera() {
                 video.srcObject = stream;
                 await video.play();
                 tracker.start(video);
+                cameraReadyRef.current = true;
                 setCameraReady(true);
-                setStatus('Cargando detección de manos...');
+                updateStatus('Cargando detección de manos...');
             } catch {
+                cameraReadyRef.current = false;
+                setCameraReady(false);
                 setStatus('Sin cámara. Usa mouse o teclado.');
             }
         };
@@ -161,13 +191,15 @@ export default function HandCamera() {
     }, []);
 
     const badge = trackerReady ? 'MEDIAPIPE ACTIVO' : cameraReady ? 'CÁMARA ACTIVA' : 'SIN CÁMARA';
+    const showStatus = status.length > 0 && !(cameraReady && trackerReady);
 
     return (
         <div className="hand-camera" aria-label="Cámara y detector de manos">
             <video ref={videoRef} autoPlay muted playsInline />
             <canvas ref={overlayRef} aria-hidden="true" />
             <span className={`hand-camera__badge ${trackerReady ? 'is-active' : ''}`}>{badge}</span>
-            <span className="hand-camera__status">{status}</span>
+            <span className="hand-camera__privacy" aria-label="La cámara no se está grabando">NO SE ESTÁ GRABANDO</span>
+            {showStatus && <span className="hand-camera__status">{status}</span>}
         </div>
     );
 }

@@ -23,6 +23,8 @@ type FrameResponse = { type: 'frame'; frame: CameraFrame };
 type ErrorResponse = { type: 'error'; message: string };
 export type HandWorkerResponse = ReadyResponse | FrameResponse | ErrorResponse;
 
+type RawLandmark = { x: number; y: number; z?: number };
+
 type WorkerScope = {
     onmessage: ((event: MessageEvent<HandWorkerMessage>) => void) | null;
     postMessage(message: HandWorkerResponse): void;
@@ -31,10 +33,31 @@ type WorkerScope = {
 const scope = globalThis as unknown as WorkerScope;
 let landmarker: {
     detectForVideo: (image: ImageBitmap, timestamp: number) => {
-        landmarks: Array<Array<{ x: number; y: number; z: number }>>;
+        landmarks: Array<RawLandmark[]>;
         handednesses: Array<Array<{ score?: number; categoryName?: string }>>;
     };
 } | null = null;
+
+function handProximity(landmarks: readonly RawLandmark[]): number {
+    let minX = 1;
+    let maxX = 0;
+    let minY = 1;
+    let maxY = 0;
+
+    for (const landmark of landmarks) {
+        minX = Math.min(minX, landmark.x);
+        maxX = Math.max(maxX, landmark.x);
+        minY = Math.min(minY, landmark.y);
+        maxY = Math.max(maxY, landmark.y);
+    }
+
+    const projectedArea = (maxX - minX) * (maxY - minY);
+    const palmWidth = landmarks.length > 17
+        ? Math.hypot(landmarks[5].x - landmarks[17].x, landmarks[5].y - landmarks[17].y)
+        : 0;
+
+    return projectedArea + palmWidth * palmWidth * 0.35;
+}
 
 scope.onmessage = async (event) => {
     try {
@@ -86,6 +109,8 @@ scope.onmessage = async (event) => {
                 handedness: category?.categoryName,
             };
         });
+
+        hands.sort((first, second) => handProximity(second.landmarks) - handProximity(first.landmarks));
 
         scope.postMessage({
             type: 'frame',
