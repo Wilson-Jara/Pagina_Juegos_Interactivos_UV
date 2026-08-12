@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
+import FirebaseAuthButton from '../components/FirebaseAuthButton';
 import HandCamera from '../components/HandCamera';
+import FirebaseLeaderboard from '../components/FirebaseLeaderboard';
 import PhaserGame from '../components/PhaserGame';
 import { flappyConfig } from '../games/flappy/FlappyScene';
 
@@ -32,25 +34,12 @@ export default function FlappyGame() {
             <header className="visual-game-navbar">
                 <div className="visual-game-navbar__inner">
                     <Link className="visual-game-logo" to="/">JUEGOS</Link>
-                    <button className="visual-login" type="button">
-                        <span>🔒</span>
-                        Iniciar sesión
-                    </button>
+                    <FirebaseAuthButton />
                 </div>
             </header>
 
             <main className="visual-game-layout">
-                <aside className="visual-leaderboard" aria-label="Tabla de mejores puntuaciones">
-                    <h2>🏆 Top 15</h2>
-                    <div className="visual-leaderboard__head">
-                        <span />
-                        <span>Nombre</span>
-                        <span>Score</span>
-                    </div>
-                    <ol className="visual-score-list">
-                        <li className="visual-score-empty">Sin récords todavía</li>
-                    </ol>
-                </aside>
+                <FirebaseLeaderboard />
 
                 <section className="visual-game-board" aria-label="Juego Flappy Bird">
                     <PhaserGame config={flappyConfig} />

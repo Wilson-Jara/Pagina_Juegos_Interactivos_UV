@@ -29,6 +29,7 @@ const MAX_LIVES = 3;
 const HAND_FLAP_COOLDOWN_MS = 120;
 const POOL_SIZE = 5;
 const BEST_SCORE_KEY = 'play-arcade-flappy-best';
+const LEADERBOARD_GAME_ID = 'flappy';
 
 type Phase = 'ready' | 'play' | 'dying' | 'over';
 
@@ -113,6 +114,7 @@ export class FlappyScene extends AbstractPhaserScene {
     private distanceToNextPipe = 0;
     private lastCameraTimestamp = -1;
     private lastHandFlapAt = Number.NEGATIVE_INFINITY;
+    private handRequiresClose = false;
 
     private readonly sfx = new Sfx();
 
@@ -212,8 +214,18 @@ export class FlappyScene extends AbstractPhaserScene {
 
         this.lastCameraTimestamp = frame.timestamp;
         const hand = frame.hands[0];
+        const handOpen = hand && this.isHandOpen(hand);
 
-        if (!hand || !this.isHandOpen(hand)) {
+        if (this.handRequiresClose) {
+            if (handOpen) {
+                return;
+            }
+
+            this.handRequiresClose = false;
+            return;
+        }
+
+        if (!handOpen) {
             return;
         }
 
@@ -274,6 +286,7 @@ export class FlappyScene extends AbstractPhaserScene {
 
     private startPlay(): void {
         this.phase = 'play';
+        this.handRequiresClose = false;
         this.score = 0;
         this.scoreText.setText('0').setVisible(true);
         this.readyTitle.setVisible(false);
@@ -439,9 +452,12 @@ export class FlappyScene extends AbstractPhaserScene {
             alpha: { from: 0, to: 1 },
             duration: 180,
         });
+
+        this.emitLeaderboardEvent('game:over', { gameId: LEADERBOARD_GAME_ID, score: this.bestRun });
     }
 
     private resetRun(): void {
+        this.emitLeaderboardEvent('game:restart', { gameId: LEADERBOARD_GAME_ID });
         this.lives = MAX_LIVES;
         this.bestRun = 0;
         this.resetLife();
@@ -457,6 +473,7 @@ export class FlappyScene extends AbstractPhaserScene {
         this.bird.setRotation(0);
         this.bird.setTexture('fb-bird-0');
         this.bird.anims.play('fb-flap');
+        this.handRequiresClose = true;
 
         for (const pipe of this.pipes) {
             this.deactivatePipe(pipe);
@@ -487,6 +504,12 @@ export class FlappyScene extends AbstractPhaserScene {
             yoyo: true,
             repeat: -1,
         });
+    }
+
+    private emitLeaderboardEvent(type: 'game:over' | 'game:restart', detail: { gameId: string; score?: number }): void {
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent(type, { detail }));
+        }
     }
 
     private updateLivesUi(): void {
