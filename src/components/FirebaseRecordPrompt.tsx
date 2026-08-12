@@ -28,6 +28,7 @@ export default function FirebaseRecordPrompt() {
     const [user, setUser] = useState<User | null>(null);
     const [name, setName] = useState('');
     const [message, setMessage] = useState('');
+    const [scoresLoaded, setScoresLoaded] = useState(false);
 
     useEffect(() => {
         if (!isFirebaseConfigured) {
@@ -40,6 +41,7 @@ export default function FirebaseRecordPrompt() {
             setScores(snapshot.docs.map((document) => ({
                 score: Number(document.data().score ?? 0),
             })));
+            setScoresLoaded(true);
         });
         const unsubscribeAuth = onAuthStateChanged(firebaseAuth, setUser);
         const handleGameOver = (event: Event): void => {
@@ -105,27 +107,39 @@ export default function FirebaseRecordPrompt() {
         }
     };
 
-    if (!qualifies) {
+    if (pendingScore === null) {
         return null;
     }
 
+    const lowestTopScore = scores[scores.length - 1]?.score ?? 0;
+
     return (
         <div className="firebase-record-prompt" role="status" aria-live="polite">
-            <strong>¡Nuevo récord: {pendingScore}!</strong>
-            {isAdmin ? (
-                <form onSubmit={(event) => void handleSave(event)}>
-                    <input
-                        value={name}
-                        onChange={(event) => setName(event.target.value)}
-                        maxLength={20}
-                        placeholder="Tu nombre"
-                        aria-label="Nombre para el récord"
-                        required
-                    />
-                    <button type="submit">Guardar</button>
-                </form>
+            {!scoresLoaded ? (
+                <small>Comprobando la tabla de récords...</small>
+            ) : qualifies ? (
+                <>
+                    <strong>¡Nuevo récord: {pendingScore}!</strong>
+                    {isAdmin ? (
+                        <form onSubmit={(event) => void handleSave(event)}>
+                            <input
+                                value={name}
+                                onChange={(event) => setName(event.target.value)}
+                                maxLength={20}
+                                placeholder="Tu nombre"
+                                aria-label="Nombre para el récord"
+                                required
+                            />
+                            <button type="submit">Guardar</button>
+                        </form>
+                    ) : (
+                        <small>Inicia sesión como Wilson para guardar tu récord.</small>
+                    )}
+                </>
             ) : (
-                <small>Inicia sesión como Wilson para guardar tu récord.</small>
+                <small>
+                    Puntaje: {pendingScore}. Para entrar al Top 15 debes superar {lowestTopScore}.
+                </small>
             )}
             {message && <small>{message}</small>}
         </div>

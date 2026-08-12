@@ -422,7 +422,7 @@ export class FlappyScene extends AbstractPhaserScene {
             this.saveBest(this.best);
         }
 
-        this.overScoreLabel.setText(`Puntaje: ${this.score}`);
+        this.overScoreLabel.setText(`Puntaje: ${this.bestRun}`);
         this.overBestLabel.setText(`Mejor: ${this.best}`);
         this.overNew.setVisible(isNewBest);
         this.lifeDots.forEach((dot) => dot.setVisible(false));
