@@ -1,11 +1,16 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, type User } from 'firebase/auth';
-import { firebaseAuth, isFirebaseConfigured } from '../lib/firebase';
+import {
+    FIREBASE_ADMIN_EMAIL,
+    FIREBASE_ADMIN_USERNAME,
+    firebaseAuth,
+    isFirebaseConfigured,
+} from '../lib/firebase';
 
 export default function FirebaseAuthButton() {
     const [user, setUser] = useState<User | null>(null);
     const [open, setOpen] = useState(false);
-    const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
@@ -18,8 +23,14 @@ export default function FirebaseAuthButton() {
         setMessage('Entrando...');
 
         try {
-            await signInWithEmailAndPassword(firebaseAuth, email.trim(), password);
+            if (username.trim().toLowerCase() !== FIREBASE_ADMIN_USERNAME.toLowerCase()) {
+                setMessage('Usuario no válido.');
+                return;
+            }
+
+            await signInWithEmailAndPassword(firebaseAuth, FIREBASE_ADMIN_EMAIL, password);
             setPassword('');
+            setUsername('');
             setMessage('');
             setOpen(false);
         } catch {
@@ -44,7 +55,7 @@ export default function FirebaseAuthButton() {
                 onClick={() => setOpen((isOpen) => !isOpen)}
             >
                 <span>🔒</span>
-                {user?.email ?? 'Iniciar sesión'}
+                {user ? FIREBASE_ADMIN_USERNAME : 'Iniciar sesión'}
             </button>
 
             {open && (
@@ -52,7 +63,7 @@ export default function FirebaseAuthButton() {
                     {user ? (
                         <>
                             <strong>Sesión admin activa</strong>
-                            <small>{user.email}</small>
+                            <small>{FIREBASE_ADMIN_USERNAME}</small>
                             <button className="firebase-auth__submit firebase-auth__submit--logout" type="button" onClick={() => void handleLogout()}>
                                 Cerrar sesión
                             </button>
@@ -61,10 +72,10 @@ export default function FirebaseAuthButton() {
                         <form onSubmit={(event) => void handleSubmit(event)}>
                             <strong>Acceso de administrador</strong>
                             <input
-                                type="email"
-                                value={email}
-                                onChange={(event) => setEmail(event.target.value)}
-                                placeholder="Correo"
+                                type="text"
+                                value={username}
+                                onChange={(event) => setUsername(event.target.value)}
+                                placeholder="Usuario"
                                 autoComplete="username"
                                 required
                             />

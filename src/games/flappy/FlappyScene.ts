@@ -5,7 +5,7 @@ import type { TrackedHand } from '../../engine/types';
 
 const DESIGN_H = 720;
 const GRAVITY = 1008;
-const FLAP_VELOCITY = -300;
+const FLAP_VELOCITY = -325;
 const MAX_FALL_SPEED = 450;
 const EASY_PIPE_SPEED = 180;
 const MEDIUM_PIPE_SPEED = 198;

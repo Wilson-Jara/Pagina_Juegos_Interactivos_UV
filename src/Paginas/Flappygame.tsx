@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import FirebaseAuthButton from '../components/FirebaseAuthButton';
 import HandCamera from '../components/HandCamera';
 import FirebaseLeaderboard from '../components/FirebaseLeaderboard';
+import FirebaseRecordPrompt from '../components/FirebaseRecordPrompt';
 import PhaserGame from '../components/PhaserGame';
 import { flappyConfig } from '../games/flappy/FlappyScene';
 
@@ -43,6 +44,7 @@ export default function FlappyGame() {
 
                 <section className="visual-game-board" aria-label="Juego Flappy Bird">
                     <PhaserGame config={flappyConfig} />
+                    <FirebaseRecordPrompt />
                 </section>
 
                 <aside className="visual-side-panels" aria-label="Paneles auxiliares">

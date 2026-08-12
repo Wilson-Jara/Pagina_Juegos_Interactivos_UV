@@ -2,6 +2,9 @@ import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
+export const FIREBASE_ADMIN_EMAIL = 'wilsonjara101@gmail.com';
+export const FIREBASE_ADMIN_USERNAME = 'Wilson';
+
 const firebaseConfig = {
     apiKey: 'AIzaSyDvWxHAtHy7sacovnxQKeg-QhgGqrcr7bA',
     authDomain: 'juegosinteractivoscam.firebaseapp.com',
